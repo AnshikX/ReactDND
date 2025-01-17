@@ -1,7 +1,16 @@
 import React from "react";
 import DropZone from "./DropZone";
+import { useDrag } from "react-dnd";
 
 const Renderer = ({ data, components, handleDrop, path }) => {
+  const [{ opacity }, drag] = useDrag({
+    type: "HTML",
+    item: {...data, type: "HTML"},
+    collect: monitor => ({
+      opacity: monitor.isDragging() ? 0.4 : 1
+    })
+  });
+  
   return (
     <div className="renderer">
       {data.map((item, index) => {
@@ -18,7 +27,7 @@ const Renderer = ({ data, components, handleDrop, path }) => {
               onDrop={handleDrop}
               path={currentPath}
             />
-            <div className="component">
+            <div className="component" ref={drag} style={{ opacity }}>
               {component ? (
                 <div className="component-content">
                   <strong>Type:</strong> {component.type}

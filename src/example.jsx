@@ -34,26 +34,36 @@ const Container = () => {
     (dropZone, item) => {
       console.log("dropZone", dropZone);
       console.log("item", item);
-
+  
       const splitDropZonePath = dropZone.path.split("-");
       const pathToDropZone = splitDropZonePath.slice(0, -1).join("-");
-
+  
       const newItem = { id: item.id, type: item.elementType };
       if (item.elementType === "TEXT") {
         newItem.children = item.children;
       }
-
-      console.log(item)
-      // sidebar into
+  
+      // Prevent dropping into a `TEXT` element
+      const targetItem = splitDropZonePath.reduce((acc, index) => {
+        return acc && acc.children ? acc.children[index] : acc ? acc[index] : undefined;
+      }, layout);
+      if (targetItem && targetItem.type === "TEXT") {
+        console.warn("Cannot drop into a TEXT element");
+        return;
+      }
+  
+      // Handle sidebar item drop
       if (item.type === "HTML") {
         const newComponent = {
           id: shortid.generate(),
           ...item,
         };
-        setComponents({
-          ...components,
+  
+        setComponents((prevComponents) => ({
+          ...prevComponents,
           [newComponent.id]: newComponent,
-        });
+        }));
+  
         setLayout(
           handleMoveSidebarComponentIntoParent(
             layout,
@@ -63,29 +73,25 @@ const Container = () => {
         );
         return;
       }
-
+  
       // Handle items with a path (non-sidebar items)
       if (!item.path) {
         console.error("Unexpected item without a path:", item);
         return;
       }
-
-      // move down here since sidebar items dont have path
+  
       const splitItemPath = item.path.split("-");
       const pathToItem = splitItemPath.slice(0, -1).join("-");
-
+  
       // 2. Pure move (no create)
       if (splitItemPath.length === splitDropZonePath.length) {
-        // 2.a. move within parent
         if (pathToItem === pathToDropZone) {
           setLayout(
             handleMoveWithinParent(layout, splitDropZonePath, splitItemPath)
           );
           return;
         }
-
-        // 2.b. OR move different parent
-        // TODO FIX columns. item includes children
+  
         setLayout(
           handleMoveToDifferentParent(
             layout,
@@ -96,7 +102,7 @@ const Container = () => {
         );
         return;
       }
-
+  
       // 3. Move + Create
       setLayout(
         handleMoveToDifferentParent(
@@ -109,6 +115,7 @@ const Container = () => {
     },
     [layout, components]
   );
+  
 
   const renderRow = (row, currentPath) => {
     return (
